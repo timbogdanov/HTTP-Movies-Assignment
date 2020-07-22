@@ -3,32 +3,36 @@ import { useHistory } from 'react-router-dom';
 import { useLocation, useParams } from 'react-router-dom';
 import axios from 'axios';
 
-const UpdateMovie = ({ match, movieList, setMovieList }) => {
-  const initalValue = {
-    title: '',
-    director: '',
-    metascore: null,
-    stars: [],
-  };
+const initalValue = {
+  title: '',
+  director: '',
+  metascore: null,
+  stars: [],
+};
 
-  const [movieInput, setMovieInput] = useState(initalValue);
+const UpdateMovie = ({ movieList, setMovieList }) => {
   const location = useLocation();
   const params = useParams();
   const { push } = useHistory();
-
-  const movie = movieList.find((thing) => `${thing.id}` === match.params.id);
+  const [movieInput, setMovieInput] = useState(initalValue);
 
   useEffect(() => {
     if (location.state) {
       setMovieInput(location.state);
     } else {
-      axios.get(`http://localhost:5000/api/movies/${params.id}`).then((res) => {
-        setMovieInput(res.data);
-      });
+      axios
+        .get(`http://localhost:5000/api/movies/${params.id}`)
+        .then((res) => {
+          setMovieInput(res.data);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
     }
   }, []);
 
   const onChange = (e) => {
+    e.persist();
     setMovieInput({ ...movieInput, [e.target.name]: e.target.value });
   };
 
@@ -36,10 +40,19 @@ const UpdateMovie = ({ match, movieList, setMovieList }) => {
     e.preventDefault();
 
     axios
-      .put(`http://localhost:5000/api/movies/${movie.id}`, movieInput)
+      .put(`http://localhost:5000/api/movies/${movieInput.id}`, movieInput)
       .then((res) => {
-        setMovieList([...movieList], res.data);
-        push(`/movies/${movie.id}`);
+        const newMovies = movieList.map((movie) => {
+          if (movie.id === res.data.id) {
+            return res.data;
+          }
+          return movie;
+        });
+        setMovieList(newMovies);
+        push(`/movies/${movieInput.id}`);
+      })
+      .catch((err) => {
+        console.log(err);
       });
   };
 
